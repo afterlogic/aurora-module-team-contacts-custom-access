@@ -45,7 +45,11 @@ class Module extends \Aurora\System\Module\AbstractModule
 			$oAuthenticatedUser = Api::getAuthenticatedUser();
 				$iAccess = EnumsAccess::NoAccess;
 				if ($oAuthenticatedUser) {
-					$iAccess = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::Access', EnumsAccess::NoAccess);
+					if ($oAuthenticatedUser->Role == UserRole::NormalUser) {
+						$iAccess = $oAuthenticatedUser->getExtendedProp(self::GetName() . '::Access', EnumsAccess::NoAccess);
+					} else {
+						$iAccess = EnumsAccess::Write;
+					}
 				}
 				if ($iAccess === EnumsAccess::NoAccess) {
 					$mResult = false;
@@ -62,17 +66,20 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 		if ($oUser && $oContact instanceof Contact && $oContact->Storage === StorageType::Team) {
 			if ($oUser->Role === UserRole::SuperAdmin || $oUser->IdTenant === $oContact->IdTenant) {
-				
-				$Access = isset($aArgs['Access']) ? (int) $aArgs['Access'] : null;
-				if (isset($Access)) {
-					$iUserAccess = $oUser->getExtendedProp(self::GetName() . '::Access', EnumsAccess::NoAccess);
-					if ($Access === $iUserAccess && $Access === EnumsAccess::Write) {
-						$mResult = true;
-					} else {
-						$mResult = false;
-					}
-				} else {
+				if ($oUser->Role === UserRole::TenantAdmin) {
 					$mResult = true;
+				} else {
+					$Access = isset($aArgs['Access']) ? (int) $aArgs['Access'] : null;
+					if (isset($Access)) {
+						$iUserAccess = $oUser->getExtendedProp(self::GetName() . '::Access', EnumsAccess::NoAccess);
+						if ($Access === $iUserAccess && $Access === EnumsAccess::Write) {
+							$mResult = true;
+						} else {
+							$mResult = false;
+						}
+					} else {
+						$mResult = true;
+					}
 				}
 			} else {
 				$mResult = false;
@@ -83,15 +90,15 @@ class Module extends \Aurora\System\Module\AbstractModule
 	public function onAfterGetContacts($aArgs, &$mResult)
 	{
 		if (\is_array($mResult) && \is_array($mResult['List'])) {
-			foreach ($mResult['List'] as $iIndex => $aContact) {
-				if ($aContact['Storage'] === StorageType::Team) {
-					$oUser = \Aurora\System\Api::getAuthenticatedUser();
-					if ($oUser) {
+			$oUser = \Aurora\System\Api::getAuthenticatedUser();
+			if ($oUser && $oUser->Role === UserRole::NormalUser) {
+				foreach ($mResult['List'] as $iIndex => $aContact) {
+					if ($aContact['Storage'] === StorageType::Team) {
 						$iUserAccess = $oUser->getExtendedProp(self::GetName() . '::Access', EnumsAccess::NoAccess);
 						$aContact['ReadOnly'] = ($iUserAccess !== EnumsAccess::Write);
-					}
 
-					$mResult['List'][$iIndex] = $aContact;
+						$mResult['List'][$iIndex] = $aContact;
+					}
 				}
 			}
 		}
@@ -101,12 +108,9 @@ class Module extends \Aurora\System\Module\AbstractModule
 	{
 		if ($mResult) {
 			$oUser = \Aurora\System\Api::getAuthenticatedUser();
-			if ($oUser && $mResult->Storage === StorageType::Team) {
-				$oUser = \Aurora\System\Api::getAuthenticatedUser();
-				if ($oUser) {
-					$iUserAccess = $oUser->getExtendedProp(self::GetName() . '::Access', EnumsAccess::NoAccess);
-					$mResult->ExtendedInformation['ReadOnly'] = ($iUserAccess !== EnumsAccess::Write);
-				}
+			if ($oUser && $oUser->Role === UserRole::NormalUser && $mResult->Storage === StorageType::Team) {
+				$iUserAccess = $oUser->getExtendedProp(self::GetName() . '::Access', EnumsAccess::NoAccess);
+				$mResult->ExtendedInformation['ReadOnly'] = ($iUserAccess !== EnumsAccess::Write);
 			}
 		}
 	}
@@ -183,9 +187,19 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$oAuthenticatedUser = Api::getAuthenticatedUser();
 		if ($oAuthenticatedUser && ($oAuthenticatedUser->Role === UserRole::SuperAdmin || 
 			($oAuthenticatedUser->Role === UserRole::TenantAdmin && $oAuthenticatedUser->IdTenant === $TenantId))) {
-				$bResult = User::whereIn('PublicId', $aWriteAccessEmails)
+			
+				$bResult = User::where('IdTenant', $TenantId)
+					->whereNotIn('PublicId', array_merge(
+						$aWriteAccessEmails,
+						$aReadAccessEmails
+					))
+					->where('Properties->' . self::GetName() . '::Access', '<>', EnumsAccess::NoAccess)
+					->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::NoAccess]);
+				$bResult = $bResult && User::where('IdTenant', $TenantId)
+					->whereIn('PublicId', $aWriteAccessEmails)
 					->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::Write]);
-				$bResult = $bResult && User::whereIn('PublicId', $aReadAccessEmails)
+				$bResult = $bResult && User::where('IdTenant', $TenantId)
+					->whereIn('PublicId', $aReadAccessEmails)
 					->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::Read]);
 		}
 
