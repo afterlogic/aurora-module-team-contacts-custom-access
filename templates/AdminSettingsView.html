@@ -1,0 +1,40 @@
+<div class="panel_top">
+	<h2 class="settings_heading" data-bind="i18n: {'key': '%MODULENAME%/HEADING_SETTINGS_TAB'}"></h2>
+</div>
+<div class="panel_center">
+	<div class="fields">
+		<div class="fieldset">
+			<div class="row">
+				<span class="label" data-bind="i18n: {'key': '%MODULENAME%/READ_ACCESS_LABEL'}"></span>
+				<div class="input inputosaurus">
+					<div class="disable_mask" data-bind="visible: true"></div>
+					<div data-bind="customScrollbar: {x: false}">
+						<div class="scroll-inner">
+							<input type="text" spellcheck="false" tabindex="3" data-bind="initDom: readAccessDom" />
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<span class="label" data-bind="i18n: {'key': '%MODULENAME%/WRITE_ACCESS_LABEL'}"></span>
+				<div class="input inputosaurus">
+					<div class="disable_mask" data-bind="visible: true"></div>
+					<div data-bind="customScrollbar: {x: false}">
+						<div class="scroll-inner">
+							<input type="text" spellcheck="false" tabindex="3" data-bind="initDom: writeAccessDom" />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>		
+
+		<div class="buttons">
+			<span class="button" data-bind="click: save, visible: !isSaving()">
+				<span data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE'}"></span>
+			</span>
+			<span class="button" data-bind="visible: isSaving()">
+				<span data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_SAVE_IN_PROGRESS'}"></span>
+			</span>
+		</div>
+	</div>
+</div>
