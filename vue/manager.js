@@ -5,6 +5,18 @@ export default {
 
   requiredModules: [],
 
+  // getAdminSystemTabs () {
+  //   return [
+  //     {
+  //       tabName: 'teamcontactscustomaccess',
+  //       tabTitle: 'TEAMCONTACTSCUSTOMACCESS.LABEL_SETTINGS_TAB',
+  //       tabRouteChildren: [
+  //         { path: 'teamcontactscustomaccess', component: () => import('./components/TeamContactsCustomAccessAdminSettings') },
+  //       ],
+  //     },
+  //   ]
+  // },
+
   getAdminUserTabs () {
     return [
       {

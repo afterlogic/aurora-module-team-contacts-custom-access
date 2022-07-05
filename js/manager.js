@@ -6,7 +6,9 @@ module.exports = function (oAppData) {
 	var
 		TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
 		
-		App = require('%PathToCoreWebclientModule%/js/App.js')
+		App = require('%PathToCoreWebclientModule%/js/App.js'),
+
+		HashModuleName = 'contacts'
 	;
 
 	if (App.getUserRole() === Enums.UserRole.SuperAdmin || App.getUserRole() === Enums.UserRole.TenantAdmin)
@@ -23,7 +25,21 @@ module.exports = function (oAppData) {
 							'admin-bundle'
 						);
 					},
-					'TeamContactsCustomAccess',
+					HashModuleName,
+					TextUtils.i18n('%MODULENAME%/ADMIN_SETTINGS_TAB_LABEL')
+				]);
+
+				ModulesManager.run('AdminPanelWebclient', 'registerAdminPanelTab', [
+					function(resolve) {
+						require.ensure(
+							['modules/%ModuleName%/js/views/AdminPerUserSettingsView.js'],
+							function() {
+								resolve(require('modules/%ModuleName%/js/views/AdminPerUserSettingsView.js'));
+							},
+							'admin-bundle'
+						);
+					},
+					HashModuleName + 1,
 					TextUtils.i18n('%MODULENAME%/ADMIN_SETTINGS_TAB_LABEL')
 				]);
 			}

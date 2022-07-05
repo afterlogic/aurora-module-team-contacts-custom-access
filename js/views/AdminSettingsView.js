@@ -20,7 +20,10 @@ var
 function CAdminSettingsView()
 {
 	CAbstractSettingsFormView.call(this, 'TeamContactsCustomAccess');
-	
+
+	this.iEntityId = 0;
+	this.sEntityType = '';
+
 	this.readAccessDom = ko.observable();
 	this.writeAccessDom = ko.observable();
 
@@ -141,22 +144,26 @@ CAdminSettingsView.prototype.applySavedValues = function (oParameters)
 
 CAdminSettingsView.prototype.setAccessLevel = function (sEntityType, iEntityId)
 {
-	this.visible(sEntityType === '' || sEntityType === 'Tenant');
-	this.iTenantId = iEntityId;
+	this.visible(sEntityType === 'Tenant');
+	this.iEntityId = (sEntityType === 'Tenant') ? iEntityId : 0;
+	this.sEntityType = sEntityType;
 };
 
 CAdminSettingsView.prototype.onRouteChild = function (aParams)
 {
-	this.requestPerTenantSettings();
+	if (this.sEntityType === 'Tenant')
+	{
+		this.requestPerEntitytSettings();
+	}
 };
 
-CAdminSettingsView.prototype.requestPerTenantSettings = function ()
+CAdminSettingsView.prototype.requestPerEntitytSettings = function ()
 {
-	if (Types.isPositiveNumber(this.iTenantId))
+	if (Types.isPositiveNumber(this.iEntityId))
 	{
 		this.readAccess([]);
 		this.writeAccess([]);
-		Ajax.send('TeamContactsCustomAccess', 'GetUsersWithAccessToTeamContacts', { 'TenantId': this.iTenantId }, function (oResponse) {
+		Ajax.send('TeamContactsCustomAccess', 'GetUsersWithAccessToTeamContacts', { 'TenantId': this.iEntityId }, function (oResponse) {
 			if (oResponse.Result)
 			{
 				this.readAccess(oResponse.Result.ReadAccess);
