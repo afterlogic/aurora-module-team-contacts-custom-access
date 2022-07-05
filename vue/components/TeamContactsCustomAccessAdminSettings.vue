@@ -97,6 +97,12 @@ export default {
     }
   },
 
+  computed: {
+    currentTenantId () {
+      return this.$store.getters['tenants/getCurrentTenantId']
+    },
+  },
+
   methods: {
     async getUserOtherDataComponents () {
       this.otherDataComponents = await modulesManager.getUserOtherDataComponents()
@@ -152,10 +158,28 @@ export default {
     // },
 
     getUserOptions (search, update, abort) {
-
-        console.log(search);
+        let parameters = {
+          TenantId: this.currentTenantId,
+          Offset: 0, 
+          Limit: 0, 
+          OrderBy: 'PublicId', 
+          OrderType: 0, 
+          Search: search
+        };
         update(() => {
-            this.userOptions = []
+        webApi.sendRequest({
+          moduleName: 'Core',
+          methodName: 'GetUsers',
+          parameters,
+        }).then(result => {
+          this.saving = false
+          this.userOptions = _.map(result.Items, user => {
+            return user.PublicId
+          });
+        }, response => {
+          this.saving = false
+          notification.showError(errors.getTextFromResponse(response, this.$t('ADMINPANELWEBCLIENT.ERROR_UPDATE_ENTITY_USER')))
+        })
         })
 
     //   const searchLowerCase = search.toLowerCase()
