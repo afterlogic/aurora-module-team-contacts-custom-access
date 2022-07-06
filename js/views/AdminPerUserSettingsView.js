@@ -3,15 +3,17 @@
 var
 	_ = require('underscore'),
 	ko = require('knockout'),
-	
+
+	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
+
 	App = require('%PathToCoreWebclientModule%/js/App.js'),
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
+	Routing = require('%PathToCoreWebclientModule%/js/Routing.js'),
 	ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js'),
-	Types = require('%PathToCoreWebclientModule%/js/utils/Types.js'),
-	AddressUtils = require('%PathToCoreWebclientModule%/js/utils/Address.js'),
-	TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
-	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
-	CAbstractSettingsFormView = ModulesManager.run('AdminPanelWebclient', 'getAbstractSettingsFormViewClass')
+
+	CAbstractSettingsFormView = ModulesManager.run('AdminPanelWebclient', 'getAbstractSettingsFormViewClass'),
+
+	Settings = require('modules/%ModuleName%/js/Settings.js')
 ;
 
 /**
@@ -20,11 +22,40 @@ var
 function CAdminPerUserSettingsView()
 {
 	CAbstractSettingsFormView.call(this, 'TeamContactsCustomAccess');
-	
-	this.iEntityId = 0;
-	this.sEntityType = '';
 
+	this.userId = ko.observable(0);
+	this.isUserTenantAdmin = ko.observable(false);
 	this.userAccess = ko.observable('0');
+
+	ko.computed(function () {
+		this.visible(this.userId() !== 0 && !this.isUserTenantAdmin());
+	}, this);
+
+	this.visible.subscribe(function () {
+		if (!this.visible() && this.bShown) {
+			const
+				hashParts = Routing.getCurrentHashArray(),
+				hashPartsCount = hashParts.length
+			;
+
+			if (hashPartsCount > 0 && hashParts[hashPartsCount - 1] === Settings.UserSettingsHash) {
+				hashParts.pop();
+				Routing.replaceHash(hashParts);
+			}
+		}
+	}, this);
+
+	App.subscribeEvent('ReceiveAjaxResponse::after', params => {
+		const
+			request = params.Request,
+			result = params.Response && params.Response.Result
+		;
+		if (request && request.Module === 'Core' && request.Method === 'GetUser'
+			&& request.Parameters && request.Parameters.Id === this.userId() && result
+		) {
+			this.isUserTenantAdmin(result.Role === Enums.UserRole.TenantAdmin);
+		}
+	});
 }
 
 _.extendOwn(CAdminPerUserSettingsView.prototype, CAbstractSettingsFormView.prototype);
@@ -45,36 +76,27 @@ CAdminPerUserSettingsView.prototype.revertGlobalValues = function()
 
 CAdminPerUserSettingsView.prototype.getParametersForSave = function ()
 {
-	var oParameters = {
-		'Access': Types.pInt(this.userAccess())
+	return {
+		Access: Types.pInt(this.userAccess()),
+		UserId: this.userId()
 	};
-	if (Types.isPositiveNumber(this.iEntityId)) // branding is shown for particular tenant
-	{
-		oParameters.UserId = this.iEntityId;
-	}
-	return oParameters;
 };
 
 CAdminPerUserSettingsView.prototype.setAccessLevel = function (sEntityType, iEntityId)
 {
-	this.visible(sEntityType === 'User');
-	this.iEntityId = sEntityType === 'User' ? iEntityId : 0;
-	this.sEntityType = sEntityType;
+	this.userId(sEntityType === 'User' ? iEntityId : 0);
 };
 
 CAdminPerUserSettingsView.prototype.onRouteChild = function (aParams)
 {
-	if (this.sEntityType === 'User')
-	{
-		this.requestPerEntitytSettings();
-	}
+	this.requestPerEntitytSettings();
 };
 
 CAdminPerUserSettingsView.prototype.requestPerEntitytSettings = function ()
 {
-	if (Types.isPositiveNumber(this.iEntityId))
+	if (Types.isPositiveNumber(this.userId()))
 	{
-		Ajax.send('TeamContactsCustomAccess', 'GetUserAccess', { 'UserId': this.iEntityId }, function (oResponse) {
+		Ajax.send('TeamContactsCustomAccess', 'GetUserAccess', { 'UserId': this.userId() }, function (oResponse) {
 			if (oResponse.Result)
 			{
 				this.userAccess(Types.pString(oResponse.Result));
@@ -87,14 +109,5 @@ CAdminPerUserSettingsView.prototype.requestPerEntitytSettings = function ()
 		this.revertGlobalValues();
 	}
 };
-
-/**
- * Sends a request to the server to save the settings.
- */
- CAdminPerUserSettingsView.prototype.save = function ()
- {
-	this.isSaving(true);
-	Ajax.send('TeamContactsCustomAccess', 'UpdateUserAccess', this.getParametersForSave(), this.onResponse, this);
- };
 
 module.exports = new CAdminPerUserSettingsView();

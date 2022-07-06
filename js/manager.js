@@ -1,18 +1,15 @@
 'use strict';
 
 module.exports = function (oAppData) {
-	require('%PathToCoreWebclientModule%/js/vendors/jquery.cookie.js');
-	
-	var
+	const
 		TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
-		
+
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
 
-		HashModuleName = 'contacts'
+		Settings = require('modules/%ModuleName%/js/Settings.js')
 	;
 
-	if (App.getUserRole() === Enums.UserRole.SuperAdmin || App.getUserRole() === Enums.UserRole.TenantAdmin)
-	{
+	if (App.getUserRole() === Enums.UserRole.SuperAdmin || App.getUserRole() === Enums.UserRole.TenantAdmin) {
 		return {
 			start: function (ModulesManager) {
 				ModulesManager.run('AdminPanelWebclient', 'registerAdminPanelTab', [
@@ -25,8 +22,8 @@ module.exports = function (oAppData) {
 							'admin-bundle'
 						);
 					},
-					HashModuleName,
-					TextUtils.i18n('%MODULENAME%/ADMIN_SETTINGS_TAB_LABEL')
+					Settings.TenantSettingsHash,
+					TextUtils.i18n('%MODULENAME%/LABEL_SETTINGS_TAB')
 				]);
 
 				ModulesManager.run('AdminPanelWebclient', 'registerAdminPanelTab', [
@@ -39,12 +36,12 @@ module.exports = function (oAppData) {
 							'admin-bundle'
 						);
 					},
-					HashModuleName + 1,
-					TextUtils.i18n('%MODULENAME%/ADMIN_SETTINGS_TAB_LABEL')
+					Settings.UserSettingsHash,
+					TextUtils.i18n('%MODULENAME%/LABEL_SETTINGS_TAB')
 				]);
 			}
 		};
 	}
-	
+
 	return null;
 };

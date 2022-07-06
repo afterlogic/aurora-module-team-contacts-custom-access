@@ -39,22 +39,25 @@ export default {
 
   data () {
     return {
+      user: null,
       saving: false,
       loading: false,
       userAccess: 0
     }
   },
+
   watch: {
     $route(to, from) {
       this.parseRoute()
     },
   },
-  mounted() {
-    this.parseRoute()
-  },
 
   beforeRouteLeave (to, from, next) {
     this.doBeforeRouteLeave(to, from, next)
+  },
+
+  mounted() {
+    this.parseRoute()
   },
 
   methods: {
@@ -89,6 +92,7 @@ export default {
         this.populate()
       }
     },
+
     populate () {
       this.loading = true
       const currentTenantId = this.$store.getters['tenants/getCurrentTenantId']
