@@ -97,6 +97,12 @@ export default {
     }
   },
 
+  watch: {
+    $route(to, from) {
+      this.parseRoute()
+    },
+  },
+
   computed: {
     currentTenantId () {
       return this.$store.getters['tenants/getCurrentTenantId']
@@ -108,28 +114,17 @@ export default {
       this.otherDataComponents = await modulesManager.getUserOtherDataComponents()
     },
     
-    // parseRoute () {
-    //   if (this.createMode) {
-    //     const user = new UserModel(this.currentTenantId, {})
-    //     this.fillUp(user)
-    //   } else {
-    //     const userId = typesUtils.pPositiveInt(this.$route?.params?.id)
-    //     if (this.user?.id !== userId) {
-    //       this.user = {
-    //         id: userId,
-    //       }
-    //       this.populate()
-    //     }
-    //   }
-    // },
+    parseRoute () {
+      this.populate()
+    },
 
-    // clear () {
+    clear () {
     //   this.publicId = ''
     //   this.isTenantAdmin = false
     //   this.writeSeparateLog = false
-    // },
+    },
 
-    // fillUp (user) {
+    fillUp (user) {
     //   this.user = user
     //   this.publicId = user.publicId
     //   this.isTenantAdmin = user.role === UserRoles.TenantAdmin
@@ -140,22 +135,28 @@ export default {
     //       value: group.id
     //     }
     //   })
-    // },
+    },
 
-    // populate () {
-    //   this.clear()
-    //   this.loading = true
-    //   cache.getUser(this.currentTenantId, this.user.id).then(({ user, userId }) => {
-    //     if (userId === this.user.id) {
-    //       this.loading = false
-    //       if (user) {
-    //         this.fillUp(user)
-    //       } else {
-    //         this.$emit('no-user-found')
-    //       }
-    //     }
-    //   })
-    // },
+    populate () {
+      this.clear()
+      this.loading = true
+
+        let parameters = {
+            TenantId: this.currentTenantId
+        };
+
+        webApi.sendRequest({
+        moduleName: 'TeamContactsCustomAccess',
+        methodName: 'GetUsersWithAccessToTeamContacts',
+        parameters,
+        }).then(result => {
+        this.saving = false
+        this.selectedUserOptions = result.ReadAccess;
+        }, response => {
+        this.saving = false
+        notification.showError(errors.getTextFromResponse(response, this.$t('ADMINPANELWEBCLIENT.ERROR_UPDATE_ENTITY_USER')))
+        })
+    },
 
     getUserOptions (search, update, abort) {
         let parameters = {
@@ -167,19 +168,19 @@ export default {
           Search: search
         };
         update(() => {
-        webApi.sendRequest({
-          moduleName: 'Core',
-          methodName: 'GetUsers',
-          parameters,
-        }).then(result => {
-          this.saving = false
-          this.userOptions = _.map(result.Items, user => {
-            return user.PublicId
-          });
-        }, response => {
-          this.saving = false
-          notification.showError(errors.getTextFromResponse(response, this.$t('ADMINPANELWEBCLIENT.ERROR_UPDATE_ENTITY_USER')))
-        })
+          webApi.sendRequest({
+            moduleName: 'Core',
+            methodName: 'GetUsers',
+            parameters,
+          }).then(result => {
+            this.saving = false
+            this.userOptions = _.map(result.Items, user => {
+              return user.PublicId
+            });
+          }, response => {
+            this.saving = false
+            notification.showError(errors.getTextFromResponse(response, this.$t('ADMINPANELWEBCLIENT.ERROR_UPDATE_ENTITY_USER')))
+          })
         })
 
     //   const searchLowerCase = search.toLowerCase()

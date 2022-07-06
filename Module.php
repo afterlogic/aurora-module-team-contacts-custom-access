@@ -188,19 +188,27 @@ class Module extends \Aurora\System\Module\AbstractModule
 		if ($oAuthenticatedUser && ($oAuthenticatedUser->Role === UserRole::SuperAdmin || 
 			($oAuthenticatedUser->Role === UserRole::TenantAdmin && $oAuthenticatedUser->IdTenant === $TenantId))) {
 			
-				$bResult = User::where('IdTenant', $TenantId)
+				User::where('IdTenant', $TenantId)
 					->whereNotIn('PublicId', array_merge(
 						$aWriteAccessEmails,
 						$aReadAccessEmails
 					))
 					->where('Properties->' . self::GetName() . '::Access', '<>', EnumsAccess::NoAccess)
 					->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::NoAccess]);
-				$bResult = $bResult && User::where('IdTenant', $TenantId)
-					->whereIn('PublicId', $aWriteAccessEmails)
-					->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::Write]);
-				$bResult = $bResult && User::where('IdTenant', $TenantId)
-					->whereIn('PublicId', $aReadAccessEmails)
-					->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::Read]);
+				if (count($aWriteAccessEmails) > 0) {
+					$bResult = User::where('IdTenant', $TenantId)
+						->whereIn('PublicId', $aWriteAccessEmails)
+						->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::Write]);
+				} else {
+					$bResult = true;
+				}
+				if (count($aReadAccessEmails)) {
+					$bResult = $bResult && User::where('IdTenant', $TenantId)
+						->whereIn('PublicId', $aReadAccessEmails)
+						->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::Read]);
+				} else {
+					$bResult = true;
+				}
 		}
 
 		return $bResult;
