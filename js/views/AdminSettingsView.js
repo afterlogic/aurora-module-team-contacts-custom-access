@@ -59,38 +59,58 @@ function CAdminSettingsView()
 	}, this);
 }
 
+CAdminSettingsView.prototype.autoCompleteSource = function (request, responseHandler)
+{
+	const
+		parameters = {
+			TenantId: this.iTenantId,
+			Offset: 0,
+			Limit: 50,
+			OrderBy: 'PublicId',
+			OrderType: 0,
+			Search: request.term
+		}
+	;
+	Ajax.send('Core', 'GetUsers', parameters, response => {
+		const
+			userList = Array.isArray(response && response.Result && response.Result.Items)
+				? response.Result.Items
+				: [],
+			options = userList
+				.filter(user => user.Role !== Enums.UserRole.TenantAdmin)
+				.map(user => {
+					return {
+						label: user.PublicId,
+						value: user.PublicId,
+						name: user.PublicId,
+						email: user.PublicId
+					};
+				})
+		;
+		responseHandler(options);
+	});
+};
+
 CAdminSettingsView.prototype.initInputosaurus = function (koDom, koAddr, koLockAddr)
 {
 	if (koDom() && $(koDom()).length > 0) {
-		const
-			suggestParameters = {
-				storage: 'team',
-				addContactGroups: false,
-				addUserGroups: false,
-				exceptEmail: '',
-				useEmailAsValues: true
-			},
-			autoCompleteSource = ModulesManager.run(
-				'ContactsWebclient', 'getSuggestionsAutocompleteCallback', [suggestParameters]
-			)
-		;
 		$(koDom()).inputosaurus({
 			width: 'auto',
 			parseOnBlur: true,
-			autoCompleteSource: _.isFunction(autoCompleteSource) ? autoCompleteSource : function () {},
-			change : _.bind(function (ev) {
+			autoCompleteSource: this.autoCompleteSource.bind(this),
+			change : event => {
 				koLockAddr(true);
-				this.setRecipient(koAddr, ev.target.value);
+				this.setRecipient(koAddr, event.target.value);
 				koLockAddr(false);
-			}, this),
-			copy: _.bind(function (sVal) {
-				this.inputosaurusBuffer = sVal;
-			}, this),
-			paste: _.bind(function () {
-				var sInputosaurusBuffer = this.inputosaurusBuffer || '';
+			},
+			copy: value => {
+				this.inputosaurusBuffer = value;
+			},
+			paste: () => {
+				const inputosaurusBuffer = this.inputosaurusBuffer || '';
 				this.inputosaurusBuffer = '';
-				return sInputosaurusBuffer;
-			}, this),
+				return inputosaurusBuffer;
+			},
 			mobileDevice: App.isMobile()
 		});
 	}

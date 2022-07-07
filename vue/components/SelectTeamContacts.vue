@@ -31,6 +31,9 @@
 <script>
 import webApi from 'src/utils/web-api'
 
+import enums from 'src/enums'
+let UserRoles = {}
+
 export default {
   name: 'SelectTeamContacts',
 
@@ -60,6 +63,7 @@ export default {
   },
 
   mounted() {
+    UserRoles = enums.getUserRoles()
     this.savedSelectedOptions = [...this.initialSelectedOptions]
     this.fillUpSelectedOptions()
   },
@@ -78,7 +82,7 @@ export default {
       const parameters = {
         TenantId: this.currentTenantId,
         Offset: 0,
-        Limit: 0,
+        Limit: 50,
         OrderBy: 'PublicId',
         OrderType: 0,
         Search: search
@@ -90,12 +94,14 @@ export default {
           parameters,
         }).then(result => {
           const userList = Array.isArray(result.Items) ? result.Items : []
-          this.options = userList.map(user => {
-            return {
-              label: user.PublicId,
-              value: user.PublicId
-            }
-          })
+          this.options = userList
+            .filter(user => user.Role !== UserRoles.TenantAdmin)
+            .map(user => {
+              return {
+                label: user.PublicId,
+                value: user.PublicId
+              }
+            })
         }, response => {
           this.options = []
         })
