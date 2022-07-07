@@ -83,7 +83,7 @@ export default {
         TenantId: this.currentTenantId,
         Search: search,
         Offset: 0,
-        Limit: 20
+        Limit: 50
       }
       update(() => {
         webApi.sendRequest({
