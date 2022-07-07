@@ -64,11 +64,9 @@ CAdminSettingsView.prototype.autoCompleteSource = function (request, responseHan
 	const
 		parameters = {
 			TenantId: this.iTenantId,
+			Search: request.term,
 			Offset: 0,
-			Limit: 50,
-			OrderBy: 'PublicId',
-			OrderType: 0,
-			Search: request.term
+			Limit: 50
 		}
 	;
 	Ajax.send('Core', 'GetUsers', parameters, response => {

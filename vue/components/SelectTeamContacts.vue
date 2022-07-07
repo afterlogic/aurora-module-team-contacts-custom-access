@@ -81,11 +81,9 @@ export default {
     getOptions (search, update, abort) {
       const parameters = {
         TenantId: this.currentTenantId,
+        Search: search,
         Offset: 0,
-        Limit: 50,
-        OrderBy: 'PublicId',
-        OrderType: 0,
-        Search: search
+        Limit: 20
       }
       update(() => {
         webApi.sendRequest({
