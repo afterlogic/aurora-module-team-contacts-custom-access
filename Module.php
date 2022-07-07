@@ -177,34 +177,27 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$bResult = false;
 		Api::checkUserRoleIsAtLeast(UserRole::TenantAdmin);
 
-		$aWriteAccessEmails = array_map(function ($item) {
-			return $item['email'];
-		}, $WriteAccess);
-		$aReadAccessEmails = array_map(function ($item) {
-			return $item['email'];
-		}, $ReadAccess);
-
 		$oAuthenticatedUser = Api::getAuthenticatedUser();
 		if ($oAuthenticatedUser && ($oAuthenticatedUser->Role === UserRole::SuperAdmin || 
 			($oAuthenticatedUser->Role === UserRole::TenantAdmin && $oAuthenticatedUser->IdTenant === $TenantId))) {
 			
 				User::where('IdTenant', $TenantId)
 					->whereNotIn('PublicId', array_merge(
-						$aWriteAccessEmails,
-						$aReadAccessEmails
+						$WriteAccess,
+						$ReadAccess
 					))
 					->where('Properties->' . self::GetName() . '::Access', '<>', EnumsAccess::NoAccess)
 					->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::NoAccess]);
-				if (count($aWriteAccessEmails) > 0) {
+				if (count($WriteAccess) > 0) {
 					$bResult = User::where('IdTenant', $TenantId)
-						->whereIn('PublicId', $aWriteAccessEmails)
+						->whereIn('PublicId', $WriteAccess)
 						->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::Write]);
 				} else {
 					$bResult = true;
 				}
-				if (count($aReadAccessEmails)) {
+				if (count($ReadAccess)) {
 					$bResult = $bResult && User::where('IdTenant', $TenantId)
-						->whereIn('PublicId', $aReadAccessEmails)
+						->whereIn('PublicId', $ReadAccess)
 						->update(['Properties->' . self::GetName() . '::Access' => EnumsAccess::Read]);
 				} else {
 					$bResult = true;

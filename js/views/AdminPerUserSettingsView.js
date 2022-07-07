@@ -21,7 +21,7 @@ var
 */
 function CAdminPerUserSettingsView()
 {
-	CAbstractSettingsFormView.call(this, 'TeamContactsCustomAccess');
+	CAbstractSettingsFormView.call(this, 'TeamContactsCustomAccess', 'UpdateUserAccess');
 
 	this.userId = ko.observable(0);
 	this.isUserTenantAdmin = ko.observable(false);
