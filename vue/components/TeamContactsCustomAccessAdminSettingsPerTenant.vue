@@ -33,6 +33,7 @@
 
 <script>
 import notification from 'src/utils/notification'
+import textUtils from 'src/utils/text'
 import webApi from 'src/utils/web-api'
 
 import SelectTeamContacts from './SelectTeamContacts'
@@ -133,36 +134,56 @@ export default {
       }
     },
 
-    save () {
-      if (!this.saving) {
-        this.saving = true
+    isValid (readAccessEmails, writeAccessEmails) {
+      const conflictEmails = readAccessEmails.filter(email => writeAccessEmails.includes(email))
+      if (conflictEmails.length > 0) {
         const
-          writeAccessTeamContacts = this?.$refs?.writeAccessTeamContacts,
-          readAccessTeamContacts = this?.$refs?.readAccessTeamContacts,
-          readAccessSelectedOptions = typeof readAccessTeamContacts?.getSelectedOptions === 'function'
-            ? readAccessTeamContacts.getSelectedOptions()
-            : [],
-          writeAccessSelectedOptions = typeof writeAccessTeamContacts?.getSelectedOptions === 'function'
-            ? writeAccessTeamContacts.getSelectedOptions()
-            : [],
-          parameters = {
-            TenantId: this.currentTenantId,
-            ReadAccess: readAccessSelectedOptions,
-            WriteAccess: writeAccessSelectedOptions,
-          }
-        webApi.sendRequest({
-          moduleName: 'TeamContactsCustomAccess',
-          methodName: 'UpdateSettings',
-          parameters,
-        }).then(result => {
-          this.saving = false
-          this.commitChanges()
-          notification.showReport(this.$t('COREWEBCLIENT.REPORT_SETTINGS_UPDATE_SUCCESS'))
-        }, response => {
-          this.saving = false
-          notification.showError(this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED'))
-        })
+          textReplacer = {
+            CONFLICT_EMAILS: textUtils.encodeHtml(conflictEmails.join(', '))
+          },
+          conflictsCount = conflictEmails.length
+        notification.showError(this.$tc('TEAMCONTACTSCUSTOMACCESS.ERROR_CONFLICT_EMAILS', conflictsCount, textReplacer))
+        return false
       }
+      return true
+    },
+
+    save () {
+      if (this.saving) {
+        return
+      }
+
+      const
+        readAccessTeamContacts = this?.$refs?.readAccessTeamContacts,
+        readAccessSelectedOptions = typeof readAccessTeamContacts?.getSelectedOptions === 'function'
+          ? readAccessTeamContacts.getSelectedOptions()
+          : [],
+        writeAccessTeamContacts = this?.$refs?.writeAccessTeamContacts,
+        writeAccessSelectedOptions = typeof writeAccessTeamContacts?.getSelectedOptions === 'function'
+          ? writeAccessTeamContacts.getSelectedOptions()
+          : [],
+        parameters = {
+          TenantId: this.currentTenantId,
+          ReadAccess: readAccessSelectedOptions,
+          WriteAccess: writeAccessSelectedOptions,
+        }
+      if (!this.isValid(readAccessSelectedOptions, writeAccessSelectedOptions)) {
+        return
+      }
+
+      this.saving = true
+      webApi.sendRequest({
+        moduleName: 'TeamContactsCustomAccess',
+        methodName: 'UpdateSettings',
+        parameters,
+      }).then(result => {
+        this.saving = false
+        this.commitChanges()
+        notification.showReport(this.$t('COREWEBCLIENT.REPORT_SETTINGS_UPDATE_SUCCESS'))
+      }, response => {
+        this.saving = false
+        notification.showError(this.$t('COREWEBCLIENT.ERROR_SAVING_SETTINGS_FAILED'))
+      })
     },
   },
 }

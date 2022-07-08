@@ -1,6 +1,6 @@
 <template>
-  <q-select dense outlined bg-color="white" use-input use-chips multiple
-            v-model="selectedOptions" :options="options" @filter="getOptions"
+  <q-select dense outlined bg-color="white" use-input use-chips multiple ref="selector"
+            v-model="selectedOptions" :options="options" @filter="getOptions" @add="clearInput"
   >
     <template v-slot:selected>
       <span v-if="selectedOptions">
@@ -78,6 +78,13 @@ export default {
       })
     },
 
+    clearInput () {
+      const updateInputValue = this.$refs?.selector?.updateInputValue
+      if (typeof updateInputValue === 'function') {
+        updateInputValue('')
+      }
+    },
+
     getOptions (search, update, abort) {
       const parameters = {
         TenantId: this.currentTenantId,
@@ -91,9 +98,14 @@ export default {
           methodName: 'GetUsers',
           parameters,
         }).then(result => {
-          const userList = Array.isArray(result.Items) ? result.Items : []
+          const
+            userList = Array.isArray(result.Items) ? result.Items : [],
+            selectedEmails = this.selectedOptions.map(option => option.value)
           this.options = userList
-            .filter(user => user.Role !== UserRoles.TenantAdmin)
+            .filter(user => {
+              const isTenant = user.Role === UserRoles.TenantAdmin
+              return !isTenant && !selectedEmails.includes(user.PublicId)
+            })
             .map(user => {
               return {
                 label: user.PublicId,
