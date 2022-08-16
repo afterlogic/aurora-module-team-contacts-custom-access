@@ -55,7 +55,7 @@ export default {
           { path: 'page/:page/id/:id/team-contacts-user', component: TeamContactsCustomAccessAdminSettingsPerUser },
           { path: 'search/:search/page/:page/id/:id/team-contacts-user', component: TeamContactsCustomAccessAdminSettingsPerUser },
         ],
-        hideTabForUserRole: UserRoles.TenantAdmin
+        hideTabForSelectedUserRoles: [UserRoles.TenantAdmin]
       }
     ]
   },
