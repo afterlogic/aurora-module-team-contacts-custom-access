@@ -14,6 +14,7 @@ use \Aurora\Modules\Contacts\Enums\StorageType;
 use Aurora\Modules\Contacts\Models\Contact;
 use Aurora\Modules\Contacts\Module as ContactsModule;
 use Aurora\Modules\Core\Models\User;
+use Aurora\Modules\TeamContacts\Module as TeamContactsModule;
 use Aurora\Modules\TeamContactsCustomAccess\Models\Access;
 use Aurora\System\Api;
 use Aurora\System\Enums\UserRole;
@@ -34,6 +35,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	public function init()
 	{
 		$this->subscribeEvent('System::IsAllowedModule', [$this, 'onIsAllowedModule']);
+		$this->subscribeEvent('Core::CreateUser::after', array($this, 'onAfterCreateUser'));
 		$this->subscribeEvent('Contacts::GetContact::after', [$this, 'onAfterGetContact']);
 		$this->subscribeEvent('Contacts::GetContacts::after', [$this, 'onAfterGetContacts']);
 		$this->subscribeEvent('Contacts::CheckAccessToObject::after', [$this, 'onAfterCheckAccessToObject']);
@@ -112,6 +114,13 @@ class Module extends \Aurora\System\Module\AbstractModule
 				$iUserAccess = $oUser->getExtendedProp(self::GetName() . '::Access', EnumsAccess::NoAccess);
 				$mResult->ExtendedInformation['ReadOnly'] = ($iUserAccess !== EnumsAccess::Write);
 			}
+		}
+	}
+
+	public function onAfterCreateUser($aArgs, &$mResult)
+	{
+		if (!Api::GetModuleManager()->IsAllowedModule('TeamContacts')) {
+			TeamContactsModule::getInstance()->onAfterCreateUser($aArgs, $mResult);
 		}
 	}
 
