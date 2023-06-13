@@ -155,11 +155,11 @@ export default {
     isValid(readAccessEmails, writeAccessEmails) {
       const conflictEmails = readAccessEmails.filter((email) => writeAccessEmails.includes(email))
       if (conflictEmails.length > 0) {
-        const textReplacer = {
+        notification.showError(
+          this.$t('TEAMCONTACTSCUSTOMACCESS.ERROR_CONFLICT_EMAILS', {
             CONFLICT_EMAILS: textUtils.encodeHtml(conflictEmails.join(', ')),
-          },
-          conflictsCount = conflictEmails.length
-        notification.showError(this.$tc('TEAMCONTACTSCUSTOMACCESS.ERROR_CONFLICT_EMAILS', conflictsCount, textReplacer))
+          })
+        )
         return false
       }
       return true
